@@ -1,0 +1,31 @@
+name:         Hack
+version:      0.0.0
+synopsis:     Tools for the Hack computer architecture
+description:  Hack provides a set of tools that enable a developer to target the Hack computer architecture.
+homepage:     https://github.com/goakley/Hackskell
+category:     Development
+author:       Glen Oakley
+maintainer:   goakley123@gmail.com
+license:      GPL-3
+license-file: LICENSE
+build-type:   Simple
+stability:    Chaotic
+bug-reports:  https://github.com/goakley/Hackskell/issues
+cabal-version:>=1.8
+
+library
+  hs-source-dirs:  src
+  exposed-modules: Hack.Assembler
+  build-depends:   base, containers
+  ghc-options:     -Wall
+
+executable HAssemble
+  hs-source-dirs: src/tools
+  main-is:        HAssemble.hs
+  build-depends:  Hack, base, containers, filepath
+  ghc-options:    -Wall
+
+source-repository head
+  type:     git
+  location: git://github.com/goakley/Hackskell.git
+  branch:   master
