@@ -19,6 +19,11 @@ library
   build-depends:   base, containers
   ghc-options:     -Wall
 
+test-suite test_assembler
+  type: exitcode-stdio-1.0
+  build-depends: Hack, base, directory, filepath
+  main-is: src/tests/test_assembler.hs
+
 executable HAssemble
   hs-source-dirs: src/tools
   main-is:        HAssemble.hs
