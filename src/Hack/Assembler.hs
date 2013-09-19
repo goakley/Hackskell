@@ -1,5 +1,12 @@
+{-|
+The Assembler defines the valid Hack assembly instructions and provides tools for manipulating assembly, including the actual act of assembling.
+-}
 module Hack.Assembler
-( Instructions
+( Constant(..)
+, Calculation(..)
+, Destination(..)
+, Jump(..)
+, Instruction(..)
 , assemble
 , parseAssembly
 ) where
@@ -23,11 +30,15 @@ duplicates ys = dups ys Set.empty Set.empty
     dups (x:xs) seen ds = dups xs (Set.insert x seen) (if Set.member x seen then Set.insert x ds else ds)
 
 
-data Constant = Literal Int | Symbol String
+-- |The constants that can be addressed by an address command
+data Constant
+  = Literal Int -- ^A literal value
+  | Symbol String -- ^A symbol that will be translated into a value
 instance Show Constant where
   show (Literal i) = show i
   show (Symbol s) = show s
 
+-- |Defines the possible calculations that can be made by the ALU
 data Calculation = Load0 | Load1 | LoadN1 |
                    LoadD | LoadA | LoadID |
                    LoadIA | LoadND | LoadNA |
@@ -64,7 +75,6 @@ instance Show Calculation where
   show SubMD = "M-D"
   show AndDM = "D&M"
   show OrDM = "D|M"
-
 instance Read Calculation where
   readsPrec _ ('D':'+':'1':xs) = [(AddD1,xs)]
   readsPrec _ ('A':'+':'1':xs) = [(AddA1,xs)]
@@ -96,7 +106,15 @@ instance Read Calculation where
   readsPrec _ ('M':xs)         = [(LoadM,xs)]
   readsPrec _ _ = []
 
-data Destination = DestM | DestD | DestMD | DestA | DestAM | DestAD | DestAMD
+-- |Defines the possible locations in which to store the result of a calculation
+data Destination
+  = DestM -- ^Stores the result into Memory[A-register]
+  | DestD -- ^Stores the result into the D-register
+  | DestMD
+  | DestA -- ^Stores the result into the A-register
+  | DestAM
+  | DestAD
+  | DestAMD
 instance Show Destination where
   show DestM = "M"
   show DestD = "D"
@@ -115,7 +133,15 @@ instance Read Destination where
   readsPrec _ ('A':'=':xs) = [(DestA,xs)]
   readsPrec _ _ = []
 
-data Jump = JumpGT | JumpEQ | JumpGE | JumpLT | JumpNE | JumpLE | Jump
+-- |Defines the possible jumps that can occur after performing a calculation
+data Jump
+  = JumpGT -- ^Jumps iff calc > 0
+  | JumpEQ -- ^Jumps iff calc == 0
+  | JumpGE -- ^Jumps iff calc >= 0
+  | JumpLT -- ^Jumps iff calc < 0
+  | JumpNE -- ^Jumps iff calc /= 0
+  | JumpLE -- ^Jumps iff calc <= 0
+  | Jump   -- ^Jumps unconditionally
 instance Show Jump where
   show JumpGT = "JGT"
   show JumpEQ = "JEQ"
@@ -134,9 +160,11 @@ instance Read Jump where
   readsPrec _ (';':'J':'M':'P':xs) = [(Jump,xs)]
   readsPrec _ _ = []
 
-data Instruction = Address Constant |
-                   Label String |
-                   Calculate Calculation (Maybe Destination) (Maybe Jump)
+-- |A single instruction that may be executed in a single cycle of the machine
+data Instruction
+  = Address Constant -- ^ A constant that will be loaded into memory
+  | Label String -- ^ A label that identifies a location in the program
+  | Calculate Calculation (Maybe Destination) (Maybe Jump) -- ^ A calculation for the ALU to perform
 instance Show Instruction where
   show (Address c) = '@':show c
   show (Label s) = "(" ++ show s ++ ")"
@@ -144,8 +172,6 @@ instance Show Instruction where
   show (Calculate c Nothing (Just j)) = show c ++ ";" ++ show j
   show (Calculate c (Just d) Nothing) = show d ++ "=" ++ show c
   show (Calculate c (Just d) (Just j)) = show d ++ "=" ++ show c ++ ";" ++ show j
-
-type Instructions = [Instruction]
 
 
 -- converts a calculation to binary
@@ -237,7 +263,7 @@ isLabel _ = False
 
 -- Removes the label instructions and provides a map of labels to binary
 -- EXCEPTION if the syntax for a label is bad or if a label was declared multiple times
-unlabel :: Instructions -> Either String (Instructions, Map.Map String Word16)
+unlabel :: [Instruction] -> Either String ([Instruction], Map.Map String Word16)
 unlabel instructions
   | not (null badLabels) = Left $ "Label(s) " ++ show badLabels ++ " are of invalid syntax (any sequence of letters, digits, _, ., $, : that does not begin with a digit)"
   | not (null dupes) = Left $ "Label(s) " ++ show dupes ++ " declared multiple types"
@@ -257,7 +283,7 @@ unlabel instructions
 -- Removes the variables from instructions using a label map
 -- ERROR if a label instruction is part of the instructions (should have been filtered out already)
 -- EXCEPTION if the syntax for a variable is invalid or if there are too many variables to assign memory addresses
-unvariable :: Instructions -> Map.Map String Word16 -> Either String Instructions
+unvariable :: [Instruction] -> Map.Map String Word16 -> Either String [Instruction]
 unvariable instructions lmap
   | not (null labels) = error "Found a Label while parsing out symbols"
   | not (null badSyms) = Left $ "Variable(s) " ++ show badSyms ++ " are of invalid syntax (any sequence of letters, digits, _, ., $, : that does not begin with a digit)"
@@ -276,14 +302,15 @@ unvariable instructions lmap
 -- Removes all symbols from instructions
 -- ERROR if (see unlabel unvariable)
 -- EXCEPTION if (see unlabel unvariable)
-unsymbol :: Instructions -> Either String Instructions
+unsymbol :: [Instruction] -> Either String [Instruction]
 unsymbol instructions = either Left (\(newins,smap) -> either Left Right (unvariable newins smap)) $ unlabel instructions
 
 
 -- Assembles instructions to binary
 -- ERROR if (see unsymbol assembleIns)
 -- EXCEPTION if (see unsymbol assembleIns)
-assemble :: Instructions -> Either [String] [Word16]
+assemble :: [Instruction] -> Either [String] [Word16]
+-- ^Assembles instructions to their 16-bit binary form; provides informative error strings on failure
 assemble instructions = either (\a -> Left [a]) (\b -> if isOkay b then Right (rs b) else Left (ls b)) $ unsymbol instructions
   where
     asmd = map assembleIns
@@ -347,7 +374,8 @@ lol (lnum,input) = either (\a -> Left ("Line " ++ show lnum ++ ": " ++ a)) Right
 dropComment :: String -> String
 dropComment str = take (length $ takeWhile ((/="//") . take 2) $ tails str) str
 
-parseAssembly :: String -> Either [String] Instructions
+parseAssembly :: String -> Either [String] [Instruction]
+-- ^Transforms source assembly code into assembly instructions; provides informative error strings on failure
 parseAssembly input = if null errors
                       then Right ins
                       else Left errors
