@@ -2,11 +2,11 @@
 The Assembler defines the valid Hack assembly instructions and provides tools for manipulating assembly, including the actual act of assembling.
 -}
 module Hack.Assembler
-( Constant(..)
+( Instruction(..)
+, Constant(..)
 , Calculation(..)
 , Destination(..)
 , Jump(..)
-, Instruction(..)
 , assemble
 , parseAssembly
 ) where
