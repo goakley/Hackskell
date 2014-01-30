@@ -36,15 +36,15 @@ data Constant
   | Symbol String -- ^A symbol that will be translated into a value
 instance Show Constant where
   show (Literal i) = show i
-  show (Symbol s) = show s
+  show (Symbol s) = tail (init (show s))
 
 -- |Defines the possible calculations that can be made by the ALU
 data Calculation = Load0 | Load1 | LoadN1 |
-                   LoadD | LoadA | LoadID |
-                   LoadIA | LoadND | LoadNA |
-                   AddD1 | AddA1 | SubD1 | SubA1 |
+                   LoadD | LoadA | InvD |
+                   InvA | NegD | NegA |
+                   IncD | IncA | DecD | DecA |
                    AddDA | SubDA | SubAD | AndDA | OrDA |
-                   LoadM | LoadIM | LoadNM | AddM1 | SubM1 |
+                   LoadM | InvM | NegM | IncM | DecM |
                    AddDM | SubDM | SubMD | AndDM | OrDM
 instance Show Calculation where
   show Load0 = "0"
@@ -52,53 +52,53 @@ instance Show Calculation where
   show LoadN1 = "-1"
   show LoadD = "D"
   show LoadA = "A"
-  show LoadID = "!D"
-  show LoadIA = "!A"
-  show LoadND = "-D"
-  show LoadNA = "-A"
-  show AddD1 = "D+1"
-  show AddA1 = "A+1"
-  show SubD1 = "D-1"
-  show SubA1 = "A-1"
+  show InvD = "!D"
+  show InvA = "!A"
+  show NegD = "-D"
+  show NegA = "-A"
+  show IncD = "D+1"
+  show IncA = "A+1"
+  show DecD = "D-1"
+  show DecA = "A-1"
   show AddDA = "D+A"
   show SubDA = "D-A"
   show SubAD = "A-D"
   show AndDA = "D&A"
   show OrDA = "D|A"
   show LoadM = "M"
-  show LoadIM = "!M"
-  show LoadNM = "-M"
-  show AddM1 = "M+1"
-  show SubM1 = "M-1"
+  show InvM = "!M"
+  show NegM = "-M"
+  show IncM = "M+1"
+  show DecM = "M-1"
   show AddDM = "D+M"
   show SubDM = "D-M"
   show SubMD = "M-D"
   show AndDM = "D&M"
   show OrDM = "D|M"
 instance Read Calculation where
-  readsPrec _ ('D':'+':'1':xs) = [(AddD1,xs)]
-  readsPrec _ ('A':'+':'1':xs) = [(AddA1,xs)]
-  readsPrec _ ('D':'-':'1':xs) = [(SubD1,xs)]
-  readsPrec _ ('A':'-':'1':xs) = [(SubA1,xs)]
+  readsPrec _ ('D':'+':'1':xs) = [(IncD,xs)]
+  readsPrec _ ('A':'+':'1':xs) = [(IncA,xs)]
+  readsPrec _ ('D':'-':'1':xs) = [(DecD,xs)]
+  readsPrec _ ('A':'-':'1':xs) = [(DecA,xs)]
   readsPrec _ ('D':'+':'A':xs) = [(AddDA,xs)]
   readsPrec _ ('D':'-':'A':xs) = [(SubDA,xs)]
   readsPrec _ ('A':'-':'D':xs) = [(SubAD,xs)]
   readsPrec _ ('D':'&':'A':xs) = [(AndDA,xs)]
   readsPrec _ ('D':'|':'A':xs) = [(OrDA,xs)]
-  readsPrec _ ('M':'+':'1':xs) = [(AddM1,xs)]
-  readsPrec _ ('M':'-':'1':xs) = [(SubM1,xs)]
+  readsPrec _ ('M':'+':'1':xs) = [(IncM,xs)]
+  readsPrec _ ('M':'-':'1':xs) = [(DecM,xs)]
   readsPrec _ ('D':'+':'M':xs) = [(AddDM,xs)]
   readsPrec _ ('D':'-':'M':xs) = [(SubDM,xs)]
   readsPrec _ ('M':'-':'D':xs) = [(SubMD,xs)]
   readsPrec _ ('D':'&':'M':xs) = [(AndDM,xs)]
   readsPrec _ ('D':'|':'M':xs) = [(OrDM,xs)]
   readsPrec _ ('-':'1':xs)     = [(LoadN1,xs)]
-  readsPrec _ ('!':'D':xs)     = [(LoadID,xs)]
-  readsPrec _ ('!':'A':xs)     = [(LoadIA,xs)]
-  readsPrec _ ('N':'D':xs)     = [(LoadND,xs)]
-  readsPrec _ ('N':'A':xs)     = [(LoadNA,xs)]
-  readsPrec _ ('!':'M':xs)     = [(LoadIM,xs)]
-  readsPrec _ ('N':'M':xs)     = [(LoadNM,xs)]
+  readsPrec _ ('!':'D':xs)     = [(InvD,xs)]
+  readsPrec _ ('!':'A':xs)     = [(InvA,xs)]
+  readsPrec _ ('N':'D':xs)     = [(NegD,xs)]
+  readsPrec _ ('N':'A':xs)     = [(NegA,xs)]
+  readsPrec _ ('!':'M':xs)     = [(InvM,xs)]
+  readsPrec _ ('N':'M':xs)     = [(NegM,xs)]
   readsPrec _ ('0':xs)         = [(Load0,xs)]
   readsPrec _ ('1':xs)         = [(Load1,xs)]
   readsPrec _ ('D':xs)         = [(LoadD,xs)]
@@ -108,29 +108,29 @@ instance Read Calculation where
 
 -- |Defines the possible locations in which to store the result of a calculation
 data Destination
-  = DestM -- ^Stores the result into Memory[A-register]
-  | DestD -- ^Stores the result into the D-register
-  | DestMD
-  | DestA -- ^Stores the result into the A-register
-  | DestAM
-  | DestAD
-  | DestAMD
+  = StoreM -- ^Stores the result into Memory[A-register]
+  | StoreD -- ^Stores the result into the D-register
+  | StoreMD
+  | StoreA -- ^Stores the result into the A-register
+  | StoreAM
+  | StoreAD
+  | StoreAMD
 instance Show Destination where
-  show DestM = "M"
-  show DestD = "D"
-  show DestMD = "MD"
-  show DestA = "A"
-  show DestAM = "AM"
-  show DestAD = "AD"
-  show DestAMD = "AMD"
+  show StoreM = "M"
+  show StoreD = "D"
+  show StoreMD = "MD"
+  show StoreA = "A"
+  show StoreAM = "AM"
+  show StoreAD = "AD"
+  show StoreAMD = "AMD"
 instance Read Destination where
-  readsPrec _ ('A':'M':'D':'=':xs) = [(DestAMD,xs)]
-  readsPrec _ ('M':'D':'=':xs) = [(DestMD,xs)]
-  readsPrec _ ('A':'M':'=':xs) = [(DestAM,xs)]
-  readsPrec _ ('A':'D':'=':xs) = [(DestAD,xs)]
-  readsPrec _ ('M':'=':xs) = [(DestM,xs)]
-  readsPrec _ ('D':'=':xs) = [(DestD,xs)]
-  readsPrec _ ('A':'=':xs) = [(DestA,xs)]
+  readsPrec _ ('A':'M':'D':'=':xs) = [(StoreAMD,xs)]
+  readsPrec _ ('M':'D':'=':xs) = [(StoreMD,xs)]
+  readsPrec _ ('A':'M':'=':xs) = [(StoreAM,xs)]
+  readsPrec _ ('A':'D':'=':xs) = [(StoreAD,xs)]
+  readsPrec _ ('M':'=':xs) = [(StoreM,xs)]
+  readsPrec _ ('D':'=':xs) = [(StoreD,xs)]
+  readsPrec _ ('A':'=':xs) = [(StoreA,xs)]
   readsPrec _ _ = []
 
 -- |Defines the possible jumps that can occur after performing a calculation
@@ -163,11 +163,11 @@ instance Read Jump where
 -- |A single instruction that may be executed in a single cycle of the machine
 data Instruction
   = Address Constant -- ^ A constant that will be loaded into memory
-  | Label String -- ^ A label that identifies a location in the program
+  | Marker String -- ^ A label that identifies a location in the program
   | Calculate Calculation (Maybe Destination) (Maybe Jump) -- ^ A calculation for the ALU to perform
 instance Show Instruction where
   show (Address c) = '@':show c
-  show (Label s) = "(" ++ show s ++ ")"
+  show (Marker s) = "(" ++ (tail (init (show s))) ++ ")"
   show (Calculate c Nothing Nothing) = show c
   show (Calculate c Nothing (Just j)) = show c ++ ";" ++ show j
   show (Calculate c (Just d) Nothing) = show d ++ "=" ++ show c
@@ -181,24 +181,24 @@ c2wrd Load1 = 4032
 c2wrd LoadN1 = 3712
 c2wrd LoadD = 768
 c2wrd LoadA = 3072
-c2wrd LoadID = 832
-c2wrd LoadIA = 3136
-c2wrd LoadND = 960
-c2wrd LoadNA = 3264
-c2wrd AddD1 = 1984
-c2wrd AddA1 = 3520
-c2wrd SubD1 = 896
-c2wrd SubA1 = 3200
+c2wrd InvD = 832
+c2wrd InvA = 3136
+c2wrd NegD = 960
+c2wrd NegA = 3264
+c2wrd IncD = 1984
+c2wrd IncA = 3520
+c2wrd DecD = 896
+c2wrd DecA = 3200
 c2wrd AddDA = 128
 c2wrd SubDA = 1216
 c2wrd SubAD = 448
 c2wrd AndDA = 0
 c2wrd OrDA = 1344
 c2wrd LoadM = 7168
-c2wrd LoadIM = 7232
-c2wrd LoadNM = 7360
-c2wrd AddM1 = 7616
-c2wrd SubM1 = 7296
+c2wrd InvM = 7232
+c2wrd NegM = 7360
+c2wrd IncM = 7616
+c2wrd DecM = 7296
 c2wrd AddDM = 4224
 c2wrd SubDM = 5312
 c2wrd SubMD = 4544
@@ -207,13 +207,13 @@ c2wrd OrDM = 5440
 -- converts a destination to binary
 d2wrd :: Maybe Destination -> Word16
 d2wrd Nothing = 0
-d2wrd (Just DestM) = 8
-d2wrd (Just DestD) = 16
-d2wrd (Just DestMD) = 24
-d2wrd (Just DestA) = 32
-d2wrd (Just DestAM) = 40
-d2wrd (Just DestAD) = 48
-d2wrd (Just DestAMD) = 56
+d2wrd (Just StoreM) = 8
+d2wrd (Just StoreD) = 16
+d2wrd (Just StoreMD) = 24
+d2wrd (Just StoreA) = 32
+d2wrd (Just StoreAM) = 40
+d2wrd (Just StoreAD) = 48
+d2wrd (Just StoreAMD) = 56
 -- converts a jump to binary
 j2wrd :: Maybe Jump -> Word16
 j2wrd Nothing = 0
@@ -226,13 +226,13 @@ j2wrd (Just JumpLE) = 6
 j2wrd (Just Jump) = 7
 
 -- Assembles an instruction to bits
--- ERROR if the instruction is symbolic (Label _ or Address Symbol _)
+-- ERROR if the instruction is symbolic (Marker _ or Address Symbol _)
 -- EXCEPTION if an address literal is greater than memory capacity
 assembleIns :: Instruction -> Either String Word16
-assembleIns (Label _) = error "Attempted to assemble a label"
+assembleIns (Marker _) = error "Attempted to assemble a label"
 assembleIns (Address (Symbol _)) = error "Attempted to assemble a symbolic address"
-assembleIns (Address (Literal lit)) = if lit > 32767
-                                      then Left ("Address literal '" ++ show lit ++ "' out of range (> 32767)")
+assembleIns (Address (Literal lit)) = if (lit > 32767) || (lit < 0)
+                                      then Left ("Address literal '" ++ show lit ++ "' out of range (0 <= addr <= 32767)")
                                       else Right (fromIntegral lit)
 assembleIns (Calculate c d j) = Right (57344 + c2wrd c + d2wrd d + j2wrd j)
 
@@ -256,26 +256,26 @@ syssymbols = Map.fromList [("SP",0),("LCL",1),("ARG",2),
 
 
 -- Determines if an instruction is a label instruction
-isLabel :: Instruction -> Bool
-isLabel (Label _) = True
-isLabel _ = False
+isMarker :: Instruction -> Bool
+isMarker (Marker _) = True
+isMarker _ = False
 
 
 -- Removes the label instructions and provides a map of labels to binary
 -- EXCEPTION if the syntax for a label is bad or if a label was declared multiple times
 unlabel :: [Instruction] -> Either String ([Instruction], Map.Map String Word16)
 unlabel instructions
-  | not (null badLabels) = Left $ "Label(s) " ++ show badLabels ++ " are of invalid syntax (any sequence of letters, digits, _, ., $, : that does not begin with a digit)"
-  | not (null dupes) = Left $ "Label(s) " ++ show dupes ++ " declared multiple types"
+  | not (null badMarkers) = Left $ "Marker(s) " ++ show badMarkers ++ " are of invalid syntax (any sequence of letters, digits, _, ., $, : that does not begin with a digit)"
+  | not (null dupes) = Left $ "Marker(s) " ++ show dupes ++ " declared multiple types"
   | not (Map.null inters) = Left $ "Symbol(s) " ++ show (map fst $ Map.toList inters) ++ " are reserved but were declared as labels"
   | otherwise = Right (map fst finalins, syssymbols `Map.union` labelmap)
   where
-    lineseq = scanl (\a b -> if isLabel b then a else a + 1) 0 instructions
-    (labels,finalins) = partition (isLabel . fst) $ zip instructions lineseq
-    slabeltrans (Label a, b) = (a,b)
-    slabeltrans _ = error "Attempted to translate a non-Label command"
+    lineseq = scanl (\a b -> if isMarker b then a else a + 1) 0 instructions
+    (labels,finalins) = partition (isMarker . fst) $ zip instructions lineseq
+    slabeltrans (Marker a, b) = (a,b)
+    slabeltrans _ = error "Attempted to translate a non-Marker command"
     slabels = map slabeltrans labels
-    badLabels = filter (not . isValidSymbol) $ map fst slabels
+    badMarkers = filter (not . isValidSymbol) $ map fst slabels
     dupes = Set.toList $ duplicates $ map fst slabels
     labelmap = Map.fromList slabels
     inters = Map.intersection syssymbols labelmap
@@ -285,12 +285,12 @@ unlabel instructions
 -- EXCEPTION if the syntax for a variable is invalid or if there are too many variables to assign memory addresses
 unvariable :: [Instruction] -> Map.Map String Word16 -> Either String [Instruction]
 unvariable instructions lmap
-  | not (null labels) = error "Found a Label while parsing out symbols"
+  | not (null labels) = error "Found a Marker while parsing out symbols"
   | not (null badSyms) = Left $ "Variable(s) " ++ show badSyms ++ " are of invalid syntax (any sequence of letters, digits, _, ., $, : that does not begin with a digit)"
   | length ssyms > 16368 = Left $ "Too many variables to fit into memory (exceeds memory by " ++ show (length ssyms - 16368) ++ ")"
   | otherwise = Right $ map (\a -> unvar a (lmap `Map.union` msyms)) instructions
   where
-    labels = filter isLabel instructions
+    labels = filter isMarker instructions
     getSymbol (Address (Symbol s)) = Just s
     getSymbol _ = Nothing
     ssyms = filter (\a -> not (Map.member a lmap)) $ foldl (\seen x -> if x `elem` seen then seen else seen ++ [x]) [] $ mapMaybe getSymbol instructions -- removes duplicates
@@ -355,8 +355,8 @@ pOAC input
 parseOneAssembly :: String -> Either String Instruction
 parseOneAssembly string
   | start == '(' = if end /= ')'
-                   then Left "Label does not end with a close paren ')'"
-                   else Right (Label center)
+                   then Left "Marker does not end with a close paren ')'"
+                   else Right (Marker center)
   | start == '@' = Right (Address (if all isDigit center then Literal (read (tail string)) else Symbol (tail string)))
 --  | start == '@' = if all isDigit center
 --                   then Right (Address (Literal (read (tail string))))
