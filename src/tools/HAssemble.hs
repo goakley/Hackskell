@@ -46,4 +46,4 @@ main = do
   -- Display all of the errors encountered when attempting to parse and assemble
   mapM_ (\(a,b) -> (mapM_ (putStrLn . (\c -> a ++ ":" ++ c)) b)) $ parserrors ++ asmerrors
   -- Output the properly assembled files to their locations
-  mapM_ (\(a,b) -> writeFile ((flip addExtension ".hack" . dropExtension) a) (unlines (map word2bin b))) asmds
+  mapM_ (\(a,b) -> (if a == "_stdin_.asm" then putStr else writeFile ((flip addExtension ".hack" . dropExtension) a)) (unlines (map word2bin b))) asmds
