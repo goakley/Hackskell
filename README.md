@@ -101,5 +101,33 @@ Some example calculation instructions are `D=A+1`, `0;JMP`, `MD=D&A;JNE`, and `M
 
 `$ HAssemble [file]...`
 
-The assembler takes a number of input files as its arguments.  Each file is assembled individually, and the output is placed in the same location as the input, under the filename `[input].hack` (as opposed to [input].asm).  If no arguments are specified, the assembler reads from STDIN and outputs `_stdin_.hack` in the current working directory.
+The assembler takes a number of input files as its arguments.  Each file is assembled individually, and the output is placed in the same location as the input, under the filename `[input].hack` (as opposed to [input].asm).  If no arguments are specified, the assembler reads from STDIN and outputs to STDOUT.
 
+## VM / Translator
+
+Virtual machine files are plaintext files that contain VM instructions and comments.  Each VM instruction appears on a single line whose tokens are seperated by some amount of whitespace. Comments span frmo the characters "//" to the end of the line.
+
+The virtual machine is stack-based; all commands perform some operation on the stack or otherwise affect memory based on the state of the stack.  Virtual machine commands are divided into four major types: arithmetic, memory, flow, and function.
+
+### Arithmetic Commands
+
+These commands perform arithmetic and logical operations on the top of the stack.  `and`, `sub`, `eq`, `gt`, `lt`, `and`, and `or` pop a value during computation, while `neg` and `not` simply modify the top of the stack.  `eq`, `gt`, and `lt` replace the top of the stack with either `0` or `-1`.
+
+### Memory Access Commands
+
+These commands transfer data between segments of memory and the stack.  Each segment (except for `constant`) can be pushed from and popped to.
+
+
+### Program Flow Commands
+
+These commands provide basic branching in the form of `label`, `goto`, and `if-goto`.  The goto commands are only able to jump to a label declared in the same function the goto is located in.
+
+### Function Commands
+
+These commands allow for the defining, calling, and returning of functions.  Functions are declared with a number indicating the number of local varaibles they have, and are called with a number indicating the number of arguments passed.  `return` simply returns to the calling point in the program.
+
+### Translator Usage
+
+`$ HTranslate [file]...`
+
+The translator takes a number of input VM files as its arguments.  These files are all assembled into one .asm program which is sent to STDOUT.
