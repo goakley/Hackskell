@@ -5,6 +5,7 @@
 
 // Executes a sequence of arithmetic and logical operations
 // on the stack. 
+function Sys.init 0
 push constant 17
 push constant 17
 eq
@@ -43,3 +44,5 @@ and
 push constant 82
 or
 not
+label WHILE
+goto WHILE

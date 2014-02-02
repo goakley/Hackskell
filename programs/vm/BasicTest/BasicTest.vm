@@ -4,6 +4,7 @@
 // File name: projects/07/MemoryAccess/BasicTest/BasicTest.vm
 
 // Executes pop & push commands using the virtual memory segments.
+function Sys.init 0
 push constant 10
 pop local 0
 push constant 21
@@ -29,3 +30,5 @@ add
 sub
 push temp 6
 add
+label WHILE
+goto WHILE

@@ -3,10 +3,17 @@
 // by Nisan and Schocken, MIT Press.
 // File name: projects/08/ProgramFlow/FibonacciSeries/FibonacciSeries.vm
 
+function Sys.init 0
+push constant 6
+push constant 3000
+call fibonacci 2
+label WHILE
+goto WHILE
+
 // Puts the first argument[0] elements of the Fibonacci series
 // in the memory, starting in the address given in argument[1].
-// Argument[0] and argument[1] are initialized by the test script 
-// before this code starts running.
+
+function fibonacci 0
 
 push argument 1
 pop pointer 1           // that = argument[1]
@@ -47,3 +54,4 @@ pop argument 0          // num_of_elements--
 goto MAIN_LOOP_START
 
 label END_PROGRAM
+return

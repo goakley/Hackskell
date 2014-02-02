@@ -15,7 +15,7 @@ cabal-version:>=1.8
 
 library
   hs-source-dirs:  src
-  exposed-modules: Hack.Assembler
+  exposed-modules: Hack.Assembler, Hack.Translator
   build-depends:   base, containers
   ghc-options:     -Wall
 
@@ -28,6 +28,12 @@ executable HAssemble
   hs-source-dirs: src/tools
   main-is:        HAssemble.hs
   build-depends:  Hack, base, containers, filepath
+  ghc-options:    -Wall
+
+executable HTranslate
+  hs-source-dirs: src/tools
+  main-is:        HTranslate.hs
+  build-depends:  Hack, base, filepath
   ghc-options:    -Wall
 
 source-repository head
