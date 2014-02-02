@@ -221,7 +221,7 @@ command2asm file lnum func Eq = Right
                                 ,Calculate LoadD (Just StoreM) Nothing -- store the custom address in R15
                                 ,Address (Symbol "$STACKEQ")
                                 ,Calculate Load0 Nothing (Just Jump) -- jump to the $STACKEQ routine
-                                ,Marker ("$EQLBL" ++ uname) -- $STACKEQ should jump back here when finished
+                                ,Marker ("$EQLBL" ++ uname) -- STACKEQ should jump back here when finished
                                 ]
   where uname = file ++ show lnum ++ func -- create a custom address for returning from the subroutine
 
@@ -232,7 +232,7 @@ command2asm file lnum func Gt = Right
                                 ,Calculate LoadD (Just StoreM) Nothing -- store the custom address in R15
                                 ,Address (Symbol "$STACKGT")
                                 ,Calculate Load0 Nothing (Just Jump) -- jump to the $STACKGT routine
-                                ,Marker ("$GTLBL" ++ uname) -- $STACKGT should jump back here when finished
+                                ,Marker ("$GTLBL" ++ uname) -- STACKGT should jump back here when finished
                                 ]
   where uname = file ++ show lnum ++ func -- create a custom address for returning from the subroutine
 
@@ -243,7 +243,7 @@ command2asm file lnum func Lt = Right
                                 ,Calculate LoadD (Just StoreM) Nothing -- store the custom address in R15
                                 ,Address (Symbol "$STACKLT")
                                 ,Calculate Load0 Nothing (Just Jump) -- jump to the $STACKLT routine
-                                ,Marker ("$LTLBL" ++ uname) -- $STACKLT should jump back here when finished
+                                ,Marker ("$LTLBL" ++ uname) -- STACKLT should jump back here when finished
                                 ]
   where uname = file ++ show lnum ++ func -- create a custom address for returning from the subroutine
 
@@ -478,7 +478,7 @@ command2asm _ _ _ Return = Right $
                            ,Calculate LoadM (Just StoreD) Nothing
                            ,Address (Symbol "ARG")
                            ,Calculate LoadM (Just StoreA) Nothing
-                           ,Calculate LoadD (Just StoreM) Nothing -- *ARG = pop()
+                           ,Calculate LoadD (Just StoreM) Nothing -- (val)*ARG = pop()
                            ,Calculate IncA (Just StoreD) Nothing
                            ,Address (Symbol "SP")
                            ,Calculate LoadD (Just StoreM) Nothing -- SP = ARG+1
@@ -604,6 +604,7 @@ translateFile file ((Function function args):remainder) = if null errors
 translateFile _ _ = Left ["File does not start with a function declaration (code cannot appear outside of a function)"]
 
 translate :: [(String,[Command])] -> Either [String] [Instruction]
+-- ^Translates VM code into Assembly; provides informative error strings on failure
 translate entries = if null (concat errors)
                     then Right (bootloader ++ concat instructions)
                     else Left (concat errors)
